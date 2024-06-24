@@ -23,10 +23,10 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
             byte[] temp = new byte[8196];
             int read = inputStream.read(temp);
             String s = new String(temp, 0, read, StandardCharsets.UTF_8);
-            System.out.println("以下是请求报文：");
+//            System.out.println("以下是请求报文：");
             this.requestContent = s;
             this.requestHeaders = new HashMap<>();
-            System.out.println(s);
+//            System.out.println(s);
             int headerBeginIndex = this.requestContent.indexOf("\n");
             int headerEndIndex = this.requestContent.indexOf("\r\n\r\n");
             String substring = this.requestContent.substring(headerBeginIndex + 1, headerEndIndex);
@@ -81,7 +81,7 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
      */
     @Override
     public String getRemoteURL() {
-        return this.requestHeaders.get("Host");
+        return this.requestHeaders.get("Host") + requestLine.split(" ")[1];
     }
 
     /**
