@@ -1,10 +1,12 @@
 package com.colin.Tomcat.core;
 
 import com.colin.Tomcat.impl.TomcatHttpServletRequest;
+import com.colin.Tomcat.impl.TomcatHttpServletResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -24,19 +26,14 @@ public class Server {
             InputStream inputStream = socket.getInputStream();
             OutputStream outputStream = socket.getOutputStream();
 
-            TomcatHttpServletRequest tomcatHttpServletRequest = new TomcatHttpServletRequest(inputStream);
+            TomcatHttpServletRequest request = new TomcatHttpServletRequest(inputStream);
+            TomcatHttpServletResponse response = new TomcatHttpServletResponse(outputStream);
             System.out.println("-----------------------------------");
-//            String header = tomcatHttpServletRequest.getHeader("User-Agent");
-//            Map<String, String> headers = tomcatHttpServletRequest.getHeaders();
-//            System.out.println(header);
-//            for (String s : headers.keySet()) {
-//                System.out.println(s+":"+headers.get(s));
-//            }
-            String method = tomcatHttpServletRequest.getMethod();
-            System.out.println(method);
-            System.out.println(tomcatHttpServletRequest.getRemoteURL());
-            System.out.println(tomcatHttpServletRequest.getRemoteURI());
-//            System.out.println(tomcatHttpServletRequest.getParameter());
+
+            PrintWriter writer = response.getWriter();
+            response.setHeader("A", "B");
+            response.setStatus(200);
+            writer.write("这是自己封装的响应报文对象");
             System.out.println("-----------------------------------");
 
             StringBuffer sb = new StringBuffer();
@@ -47,10 +44,11 @@ public class Server {
               .append("A: B\n")
               .append("\n")//空行
               .append("hello world!");//响应体
-            outputStream.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+//            outputStream.write(sb.toString().getBytes(StandardCharsets.UTF_8));
 
             System.out.println("已发给服务端响应");
 
+            response.finishedResponse();
             outputStream.close();
             inputStream.close();
             socket.close();

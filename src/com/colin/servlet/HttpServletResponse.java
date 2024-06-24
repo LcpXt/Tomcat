@@ -16,10 +16,10 @@ public interface HttpServletResponse {
 
     /**
      * 设置响应头
-     * @param name
+     * @param key
      * @param value
      */
-    void setHeader(String name, String value);
+    void setHeader(String key, String value);
 
     /**
      * 设置响应行状态码
