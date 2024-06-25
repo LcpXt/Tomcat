@@ -5,9 +5,7 @@ import com.colin.servlet.HttpServletRequest;
 import com.colin.servlet.HttpServletResponse;
 import com.colin.servlet.annotation.WebServlet;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 
 /**
  * 2024年06月24日16:51
@@ -23,17 +21,16 @@ public class TestServlet extends HttpServlet {
 
     @Override
     public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        BufferedReader br = req.getReader();
-        StringBuffer sb = new StringBuffer();
-        String temp = "";
-        while ((temp = br.readLine()) != null){
-            sb.append(temp);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        InputStream inputStream = req.getInputStream();
+        byte[] buffer = new byte[1024];
+        int length = 0;
+        while ((length = inputStream.read(buffer)) != -1) {
+            byteArrayOutputStream.write(buffer, 0, length);
         }
-        System.out.println(sb);
-        br.close();
-        PrintWriter writer = resp.getWriter();
-        writer.write("这里是响应体");
-        System.out.println("执行TestServlet");
+        System.out.println(byteArrayOutputStream.toString());
+        byteArrayOutputStream.close();
+        inputStream.close();
     }
 
     @Override
