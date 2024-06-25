@@ -1,6 +1,7 @@
 package com.colin.servlet;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.Reader;
 import java.util.Map;
 
@@ -59,4 +60,10 @@ public interface HttpServletRequest {
      * @return
      */
     BufferedReader getReader();
+
+    /**
+     * 获取请求体数据的字节流
+     * @return
+     */
+    InputStream getInputStream();
 }

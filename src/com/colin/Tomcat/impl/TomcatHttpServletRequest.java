@@ -11,23 +11,56 @@ import java.util.Map;
  * 2024年06月24日10:09
  */
 public class TomcatHttpServletRequest implements HttpServletRequest {
-
+    /**
+     * 完整的请求报文
+     */
     private final String requestContent;
+    /**
+     * 请求头
+     */
     private final Map<String, String> requestHeaders;
+    /**
+     * 请求行
+     */
     private final String requestLine;
+    /**
+     * 请求体
+     */
     private String requestBody;
-    private Map<String, String> queryParamMap;
+    /**
+     * 查询字符串参数的map载体，方便getParamter根据key获取value
+     */
+    private final Map<String, String> queryParamMap;
+    /**
+     * 查询字符串参数，就是uri后以?分隔的参数字符串
+     */
     private String queryParamString;
+    /**
+     * URI
+     */
     private String uri;
+    /**
+     * URL
+     */
     private String url;
+    /**
+     * 请求体的长度
+     */
+    private Integer contentLength;
+    /**
+     * 请求体数据的字节流
+     */
+    private InputStream inputStream;
+    /**
+     * 请求体的完整字节数据
+     */
+    private byte[] requestBodyByteArray;
 
     public TomcatHttpServletRequest(InputStream inputStream, String serverIp, int serverPort) throws IOException {
         try {
-            byte[] temp = new byte[32784];
+            byte[] temp = new byte[8192];
             int read = inputStream.read(temp);
-            //            System.out.println("以下是请求报文：");
-            this.requestContent = new String(temp, 0, read, StandardCharsets.UTF_8);
-//            System.out.println(this.requestContent);
+            this.requestContent = new String(temp, 0, read, StandardCharsets.ISO_8859_1);
             this.requestHeaders = new HashMap<>();
             int headerBeginIndex = this.requestContent.indexOf("\n");
             int headerEndIndex = this.requestContent.indexOf("\r\n\r\n");
@@ -40,18 +73,49 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
             }
             this.requestLine = requestContent.substring(0, headerBeginIndex - 1);
             //解析请求行
+            this.queryParamMap = new HashMap<>();
             this.parseRequestLine(serverIp, serverPort);
-            this.parseRequestBody(headerEndIndex);
+
+            int requestBodyBeginIndex = headerEndIndex + 4;
+            //从\r\n\r\n截到最后就是剩下的不完整请求体
+            String incompleteBody = requestContent.substring(requestBodyBeginIndex);
+            byte[] incompleteBodyBytes = incompleteBody.getBytes(StandardCharsets.ISO_8859_1);
+            //得到请求体内容一共有多少字节
+            int contentLength = getContentLength(substring);
+            System.out.println("总大小："+ contentLength);
+            this.parseRequestBody(headerEndIndex, incompleteBodyBytes, inputStream);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * 解析请求体
-     * @param headerEndIndex
+     * 获取请求体的长度
+     * @param substring
+     * @return
      */
-    private void parseRequestBody(int headerEndIndex) {
+    public int getContentLength(String substring) {
+        String[] headerKeyAndValue = substring.split("\r\n");
+        this.contentLength = 0;
+        for (String kv : headerKeyAndValue) {
+            if (kv.toLowerCase().contains("content-length")) {
+                int delimiterIndex = kv.indexOf(":");
+                String contentLengthStr = kv.substring(delimiterIndex + 1).trim();
+                this.contentLength = Integer.parseInt(contentLengthStr);
+                return this.contentLength;
+            }
+        }
+        return this.contentLength;
+    }
+
+    /**
+     * 解析请求体
+     *
+     * @param headerEndIndex
+     * @param incompleteBodyBytes
+     * @param inputStream
+     */
+    private void parseRequestBody(int headerEndIndex, byte[] incompleteBodyBytes, InputStream inputStream) throws IOException {
         this.requestBody = requestContent.substring(headerEndIndex + 4);
         String contentType = requestHeaders.get("Content-Type");
         if (contentType == null){
@@ -64,6 +128,39 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
         if ("application/x-www-form-urlencoded".equals(contentType.trim())){
             this.parseUrlencodedToQueryParamMap(this.requestBody);
         }
+        //客户端会自动给一个随机的bindry分隔，无法用equals进行比较
+        //multipart/form-data/bindry。。。。。
+        if (contentType.trim().contains("multipart/form-data")){
+            this.parseFormData(incompleteBodyBytes, inputStream);
+        }
+    }
+
+    /**
+     * 处理二进制数据
+     */
+    private void parseFormData(byte[] incompleteBodyBytes, InputStream inputStream) throws IOException {
+        int tempLength = 0;
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        //把请求头后面的剩余二进制数据先写进来
+        byteArrayOutputStream.write(incompleteBodyBytes);
+        //剩余的二进制数据长度 = content-length头中表明的总长度 - 第一次读取时读进来的不完全的数据的长度
+        int residueBodyBytesLength = this.contentLength - incompleteBodyBytes.length;
+        System.out.println("剩余的大小：" + residueBodyBytesLength);
+        System.out.println("第一次读进来的大小：" + incompleteBodyBytes.length);
+        byte[] maxBufferBytes = new byte[65536];
+        while (tempLength < residueBodyBytesLength) {
+            int length = inputStream.read(maxBufferBytes);
+            tempLength += length;
+            byteArrayOutputStream.write(maxBufferBytes, 0, length);
+        }
+        this.requestBodyByteArray = byteArrayOutputStream.toByteArray();
+        System.out.println("完整字节数组大小：" + this.requestBodyByteArray.length);
+        byteArrayOutputStream.close();
+
+    }
+    @Override
+    public InputStream getInputStream() {
+        return new ByteArrayInputStream(this.requestBodyByteArray);
     }
 
     private void parseUrlencodedToQueryParamMap(String str) {
@@ -87,7 +184,6 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
         this.uri = uriAndParam;
         // 第一个问号的位置
         int questionMarkIndex = uriAndParam.indexOf("?");
-        
         //有?的话就把前面的截出来，防止没有?或者只有?没有后面的kv
         if (questionMarkIndex == -1) {
             this.queryParamString = "";
@@ -103,18 +199,12 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
             this.parseQueryParamToMap(this.queryParamString);
         }
         this.url = (temp[2].split("/"))[0].toLowerCase() + "://" + serverIp + ":" + serverPort + uriAndParam;
-//        System.out.println("serverIp："+ serverIp);
-//        System.out.println("serverport："+ serverPort);
-//        System.out.println(this.url);
-//        System.out.println(this.uri);
-//        System.out.println(this.queryParamString);
     }
 
     /**
      * 解析字符串参数
      */
     private void parseQueryParamToMap(String str) {
-        this.queryParamMap = new HashMap<>();
         String[] entryArr = str.split("&");
         for (String entry : entryArr) {
             String[] keyValue = entry.split("=");
