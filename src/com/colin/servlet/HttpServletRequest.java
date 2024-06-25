@@ -1,5 +1,7 @@
 package com.colin.servlet;
 
+import java.io.BufferedReader;
+import java.io.Reader;
 import java.util.Map;
 
 /**
@@ -51,4 +53,10 @@ public interface HttpServletRequest {
      * @return
      */
     String getParameter(String key);
+
+    /**
+     * 获取当前请求对象的字符输入流
+     * @return
+     */
+    BufferedReader getReader();
 }

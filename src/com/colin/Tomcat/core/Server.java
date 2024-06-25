@@ -5,6 +5,7 @@ import com.colin.Tomcat.impl.TomcatHttpServletResponse;
 import com.colin.servlet.HttpServlet;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -30,7 +31,10 @@ public class Server {
     private static Map<String, HttpServlet> servletMapping = new HashMap<>();
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-        ServerSocket serverSocket = new ServerSocket(8080);
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(new InetSocketAddress( "localhost",8080));
+        String serverIp = serverSocket.getInetAddress().getHostName();
+        int serverPort = serverSocket.getLocalPort();
 
 
         File file = new File(sourceFolder);
@@ -39,12 +43,12 @@ public class Server {
 
         while (true) {
             Socket socket = serverSocket.accept();
-            System.out.println("客户端收到请求");
+//            System.out.println("客户端收到请求");
 
             InputStream inputStream = socket.getInputStream();
             OutputStream outputStream = socket.getOutputStream();
 
-            TomcatHttpServletRequest request = new TomcatHttpServletRequest(inputStream);
+            TomcatHttpServletRequest request = new TomcatHttpServletRequest(inputStream, serverIp, serverPort);
             TomcatHttpServletResponse response = new TomcatHttpServletResponse(outputStream);
 
             String remoteURI = request.getRemoteURI();
@@ -101,7 +105,7 @@ public class Server {
 
 
 
-            System.out.println("已发给服务端响应");
+//            System.out.println("已发给服务端响应");
 
             response.finishedResponse();
             outputStream.close();
