@@ -5,6 +5,8 @@ import com.colin.servlet.HttpServletRequest;
 import com.colin.servlet.HttpServletResponse;
 import com.colin.servlet.annotation.WebServlet;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 /**
@@ -20,7 +22,15 @@ public class TestServlet extends HttpServlet {
     }
 
     @Override
-    public void service(HttpServletRequest req, HttpServletResponse resp) {
+    public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        BufferedReader br = req.getReader();
+        StringBuffer sb = new StringBuffer();
+        String temp = "";
+        while ((temp = br.readLine()) != null){
+            sb.append(temp);
+        }
+        System.out.println(sb);
+        br.close();
         PrintWriter writer = resp.getWriter();
         writer.write("这里是响应体");
         System.out.println("执行TestServlet");
