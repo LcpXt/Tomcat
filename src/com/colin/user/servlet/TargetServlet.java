@@ -4,6 +4,7 @@ import com.colin.servlet.HttpServlet;
 import com.colin.servlet.HttpServletRequest;
 import com.colin.servlet.HttpServletResponse;
 import com.colin.servlet.annotation.WebServlet;
+import com.colin.user.bean.User;
 
 import java.io.IOException;
 
@@ -13,7 +14,10 @@ import java.io.IOException;
 @WebServlet("/target")
 public class TargetServlet extends HttpServlet {
     @Override
-    public void service(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         System.out.println("这里是targetServlet");
+        User user = (User) req.getAttribute("user");
+        System.out.println(user);
+        resp.getWriter().write(user.toString());
     }
 }
