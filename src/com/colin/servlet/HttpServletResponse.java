@@ -37,4 +37,10 @@ public interface HttpServletResponse {
      * 清空内容
      */
     void reset();
+
+    /**
+     * 添加cookie
+     * @param cookie
+     */
+    void addCookie(Cookie cookie);
 }

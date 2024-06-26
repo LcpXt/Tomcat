@@ -1,5 +1,6 @@
 package com.colin.Tomcat.impl;
 
+import com.colin.servlet.Cookie;
 import com.colin.servlet.HttpServletResponse;
 
 import java.io.ByteArrayOutputStream;
@@ -7,13 +8,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 2024年06月24日14:02
  */
 public class TomcatHttpServletResponse implements HttpServletResponse {
+
+    /**
+     * 上传cookie的缓冲区
+     */
+    private List<StringBuilder> cookieBufferList;
 
     /**
      * 状态码载体
@@ -48,6 +53,8 @@ public class TomcatHttpServletResponse implements HttpServletResponse {
     private OutputStream outputStream;
 
     public TomcatHttpServletResponse(OutputStream outputStream) {
+        //频繁插入数据ArrayList可能出现扩容
+        this.cookieBufferList = new LinkedList<>();
         this.outputStream = outputStream;
         this.headers = new HashMap<String, String>();
         this.headers.put("Content-Type", "text/html; charset=utf-8");
@@ -119,6 +126,26 @@ public class TomcatHttpServletResponse implements HttpServletResponse {
         this.byteArrayOutputStream.reset();
     }
 
+    /**
+     * 添加cookie
+     *
+     * @param cookie
+     */
+    @Override
+    public void addCookie(Cookie cookie) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(cookie.getKey()).append("=").append(cookie.getValue()).append("; ")
+                .append("Path=").append(cookie.getPath()).append("; ");
+        if (cookie.getMaxAge() > 0){
+            stringBuilder.append("Max-Age=").append(cookie.getMaxAge()).append("; ")
+                    .append("Expires=").append(cookie.getExpires()).append("; ");
+        }
+        if (cookie.getHttpOnly()){
+            stringBuilder.append("HttpOnly ");
+        }
+        this.cookieBufferList.add(stringBuilder);
+    }
+
     public void prepareNoBodyResponse() throws IOException {
         this.stringBuffer = new StringBuffer();
         this.stringBuffer
@@ -127,8 +154,8 @@ public class TomcatHttpServletResponse implements HttpServletResponse {
         for (String headerKey : headers.keySet()) {
             this.stringBuffer.append(headerKey).append(": ").append(headers.get(headerKey)).append("\r\n");
         }
-        //拼接空行
-        this.stringBuffer.append("\r\n");
+        //拼接空行   不拼了
+//        this.stringBuffer.append("\r\n");
         //不拼响应体
     }
 
@@ -139,6 +166,12 @@ public class TomcatHttpServletResponse implements HttpServletResponse {
         this.prepareNoBodyResponse();
         //写入没有响应体的响应报文
         this.outputStream.write(this.stringBuffer.toString().getBytes(StandardCharsets.UTF_8));
+        if (cookieBufferList.size() != 0){
+            for (StringBuilder stringBuilder : cookieBufferList) {
+                this.outputStream.write(("Set-Cookie: " + stringBuilder + "\r\n").getBytes(StandardCharsets.UTF_8));
+            }
+        }
+        this.outputStream.write("\r\n".getBytes(StandardCharsets.UTF_8));
         //写入响应体
         this.outputStream.write(bodyBytes);
 

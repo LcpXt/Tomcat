@@ -86,4 +86,10 @@ public interface HttpServletRequest {
      * @return
      */
     Object getAttribute(String key);
+
+    /**
+     * 获取cookie
+     * @return
+     */
+    Cookie[] getCookies();
 }

@@ -1,5 +1,6 @@
 package com.colin.Tomcat.impl;
 
+import com.colin.servlet.Cookie;
 import com.colin.servlet.HttpServletRequest;
 import com.colin.servlet.RequestDispatcher;
 
@@ -56,8 +57,14 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
      * 请求体的完整字节数据
      */
     private byte[] requestBodyByteArray;
-
+    /**
+     * 域对象存kv
+     */
     private Map<String, Object> attributes;
+    /**
+     * Cookie数组
+     */
+    private Cookie[] cookies;
 
     public TomcatHttpServletRequest(InputStream inputStream, String serverIp, int serverPort) throws IOException {
         try {
@@ -75,6 +82,8 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
                 String headerKey = headerKeyAndValue.substring(0, i);
                 requestHeaders.put(headerKey, headerKeyAndValue.substring(i + 1));
             }
+            //解析cookie
+            this.parseCookie();
             this.requestLine = requestContent.substring(0, headerBeginIndex - 1);
             //解析请求行
             this.queryParamMap = new HashMap<>();
@@ -90,6 +99,28 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
             this.parseRequestBody(headerEndIndex, incompleteBodyBytes, inputStream);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 解析cookie
+     * <p>
+     * cookie的形式
+     * cookie  :   k1=v1;k2=v2;k3=v3
+     */
+    private void parseCookie() {
+
+        String allCookie = this.requestHeaders.get("cookie");
+        if (allCookie != null) {
+            String[] cookieStr = allCookie.split(";");
+            this.cookies = new Cookie[cookieStr.length];
+            for (int i = 0; i < cookieStr.length; i++) {
+                String[] entry = cookieStr[i].trim().split("=");
+                String key = entry[0];
+                String value = entry[1];
+                TomcatCookie tomcatCookie = new TomcatCookie(key, value);
+                this.cookies[i] = tomcatCookie;
+            }
         }
     }
 
@@ -197,6 +228,16 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
     @Override
     public Object getAttribute(String key) {
         return this.attributes.get(key);
+    }
+
+    /**
+     * 获取cookie
+     *
+     * @return
+     */
+    @Override
+    public Cookie[] getCookies() {
+        return this.cookies;
     }
 
     private void parseUrlencodedToQueryParamMap(String str) {
