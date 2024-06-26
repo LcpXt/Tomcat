@@ -72,4 +72,18 @@ public interface HttpServletRequest {
      * @param uri
      */
     RequestDispatcher getRequestDispatcher(String uri);
+
+    /**
+     *向域对象放入kv
+     * @param key
+     * @param value
+     */
+    void setAttribute(String key, Object value);
+
+    /**
+     * 根据k，从域对象获取v
+     * @param key
+     * @return
+     */
+    Object getAttribute(String key);
 }

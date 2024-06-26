@@ -39,7 +39,6 @@ public class TomcatRequestDispatcher implements RequestDispatcher {
                         httpServlet.init();
                         Server.servletMapping.put(currentClassName, httpServlet);
                     }
-                    httpServlet.service(req, resp);
                 }
             }
         } catch (Exception e) {

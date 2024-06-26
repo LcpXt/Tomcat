@@ -57,8 +57,11 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
      */
     private byte[] requestBodyByteArray;
 
+    private Map<String, Object> attributes;
+
     public TomcatHttpServletRequest(InputStream inputStream, String serverIp, int serverPort) throws IOException {
         try {
+            this.attributes = new HashMap<>();
             byte[] temp = new byte[8192];
             int read = inputStream.read(temp);
             this.requestContent = new String(temp, 0, read, StandardCharsets.ISO_8859_1);
@@ -172,6 +175,28 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
     @Override
     public RequestDispatcher getRequestDispatcher(String uri) {
         return new TomcatRequestDispatcher(uri);
+    }
+
+    /**
+     * 向域对象放入kv
+     *
+     * @param key
+     * @param value
+     */
+    @Override
+    public void setAttribute(String key, Object value) {
+        this.attributes.put(key, value);
+    }
+
+    /**
+     * 根据k，从域对象获取v
+     *
+     * @param key
+     * @return
+     */
+    @Override
+    public Object getAttribute(String key) {
+        return this.attributes.get(key);
     }
 
     private void parseUrlencodedToQueryParamMap(String str) {
