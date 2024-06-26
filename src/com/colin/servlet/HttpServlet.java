@@ -13,7 +13,7 @@ public abstract class HttpServlet implements Servlet{
     }
 
     @Override
-    public void service(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 
     }
 

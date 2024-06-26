@@ -100,6 +100,25 @@ public class TomcatHttpServletResponse implements HttpServletResponse {
         this.status = status;
     }
 
+    /**
+     * 重定向
+     *
+     * @param location
+     */
+    @Override
+    public void sendRedirect(String location) {
+        this.setStatus(302);
+        this.setHeader("Location", location);
+    }
+
+    /**
+     * 清空内容
+     */
+    @Override
+    public void reset() {
+        this.byteArrayOutputStream.reset();
+    }
+
     public void prepareNoBodyResponse() throws IOException {
         this.stringBuffer = new StringBuffer();
         this.stringBuffer

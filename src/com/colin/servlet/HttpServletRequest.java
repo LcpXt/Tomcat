@@ -66,4 +66,10 @@ public interface HttpServletRequest {
      * @return
      */
     InputStream getInputStream();
+
+    /**
+     * 获取请求控制器
+     * @param uri
+     */
+    RequestDispatcher getRequestDispatcher(String uri);
 }

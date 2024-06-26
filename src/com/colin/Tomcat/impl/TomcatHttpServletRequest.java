@@ -1,6 +1,7 @@
 package com.colin.Tomcat.impl;
 
 import com.colin.servlet.HttpServletRequest;
+import com.colin.servlet.RequestDispatcher;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -161,6 +162,16 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
     @Override
     public InputStream getInputStream() {
         return new ByteArrayInputStream(this.requestBodyByteArray);
+    }
+
+    /**
+     * 获取请求控制器
+     *
+     * @param uri
+     */
+    @Override
+    public RequestDispatcher getRequestDispatcher(String uri) {
+        return new TomcatRequestDispatcher(uri);
     }
 
     private void parseUrlencodedToQueryParamMap(String str) {

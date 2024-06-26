@@ -23,12 +23,16 @@ public class Server {
      */
     public static final String sourceFolder = "E:\\project\\Tomcat\\src";
 
-    private static Map<String, String> URIMappings;
+    /**
+     * URI和全限定类名的kv
+     */
+    public static Map<String, String> URIMappings;
 
     /**
+     * 全限定类名 和 已经初始化过的servlet
      * 存储已经初始化过的servlet
      */
-    private static Map<String, HttpServlet> servletMapping = new HashMap<>();
+    public static Map<String, HttpServlet> servletMapping = new HashMap<>();
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
         ServerSocket serverSocket = new ServerSocket();
@@ -65,6 +69,7 @@ public class Server {
                         Class<?> aClass = Class.forName(currentServletClassName);
                         currentServlet = (HttpServlet) aClass.newInstance();
                         currentServlet.init();
+                        servletMapping.put(currentServletClassName, currentServlet);
                     }
                     currentServlet.service(request, response);
                     flag = false;

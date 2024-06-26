@@ -26,4 +26,15 @@ public interface HttpServletResponse {
      * @param status
      */
     void setStatus(int status);
+
+    /**
+     * 重定向
+     * @param location
+     */
+    void sendRedirect(String location);
+
+    /**
+     * 清空内容
+     */
+    void reset();
 }
