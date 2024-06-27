@@ -48,7 +48,8 @@ public class TomcatHttpSession implements HttpSession {
      *<p>
      *可以剥离到配置文件
      */
-    private static final Long DEFAULT_SESSION_TTL = 100 * 60 * 30L;
+//    private static final Long DEFAULT_SESSION_TTL = 100 * 60 * 30L;
+    private static final Long DEFAULT_SESSION_TTL = 10000L;
 
     /**
      * 是否过期的标记
@@ -103,6 +104,42 @@ public class TomcatHttpSession implements HttpSession {
     @Override
     public void invalidate() {
 
+    }
+
+    public Long getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Long createTime) {
+        this.createTime = createTime;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+    }
+
+    public Long getTtl() {
+        return ttl;
+    }
+
+    public void setTtl(Long ttl) {
+        this.ttl = ttl;
+    }
+
+    public Boolean getTtlMark() {
+        return ttlMark;
+    }
+
+    public void setTtlMark(Boolean ttlMark) {
+        this.ttlMark = ttlMark;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     @Override
