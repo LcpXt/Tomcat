@@ -16,21 +16,12 @@ import java.io.*;
 public class TestServlet extends HttpServlet {
     @Override
     public void init() {
-        System.out.println("执行TestServlet的init方法");
+//        System.out.println("执行TestServlet的init方法");
     }
 
     @Override
     public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        InputStream inputStream = req.getInputStream();
-        byte[] buffer = new byte[1024];
-        int length = 0;
-        while ((length = inputStream.read(buffer)) != -1) {
-            byteArrayOutputStream.write(buffer, 0, length);
-        }
-        System.out.println(byteArrayOutputStream.toString());
-        byteArrayOutputStream.close();
-        inputStream.close();
+        req.getSession();
     }
 
     @Override
