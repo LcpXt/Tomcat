@@ -12,6 +12,12 @@ import java.util.Map;
 public interface HttpServletRequest {
 
     /**
+     * 获取session
+     * @return
+     */
+    HttpSession getSession();
+
+    /**
      * 根据请求头的key获取对应value
      * @param key
      * @return
@@ -88,7 +94,7 @@ public interface HttpServletRequest {
     Object getAttribute(String key);
 
     /**
-     * 获取cookie
+     * 获取请求报文中所有cookie
      * @return
      */
     Cookie[] getCookies();

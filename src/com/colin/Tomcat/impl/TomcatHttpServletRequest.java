@@ -1,7 +1,9 @@
 package com.colin.Tomcat.impl;
 
+import com.colin.Tomcat.core.SessionManager;
 import com.colin.servlet.Cookie;
 import com.colin.servlet.HttpServletRequest;
+import com.colin.servlet.HttpSession;
 import com.colin.servlet.RequestDispatcher;
 
 import java.io.*;
@@ -65,6 +67,14 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
      * Cookie数组
      */
     private Cookie[] cookies;
+    /**
+     * 临时存储Session
+     */
+    public HttpSession currentSession;
+    /**
+     * 初始化Session的一个标记，默认时false
+     */
+    public boolean initSessionMark;
 
     public TomcatHttpServletRequest(InputStream inputStream, String serverIp, int serverPort) throws IOException {
         try {
@@ -231,7 +241,7 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
     }
 
     /**
-     * 获取cookie
+     * 获取请求报文中所有的cookie
      *
      * @return
      */
@@ -287,6 +297,36 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
             String[] keyValue = entry.split("=");
             this.queryParamMap.put(keyValue[0], keyValue[1]);
         }
+    }
+
+    /**
+     * 获取session
+     *
+     * @return
+     */
+    @Override
+    public HttpSession getSession() {
+        if (this.cookies != null){
+            for (Cookie cookie : cookies) {
+                if ("JSESSIONID".equals(cookie.getKey().trim())){
+                    this.currentSession = SessionManager.getSession(Integer.parseInt(cookie.getValue()));
+                    System.err.println("此次是基于容器获取session" + this.currentSession);
+                    if (this.currentSession == null){
+                        //客户端一直没有关，JSESSIONID会通过cookie传过来
+                        //但是session有过期时间，过期后就会从map中remove这个对象
+                        //此时是获取不到这个session的
+                        //重新为当前客户端创建一个session对象
+                        this.initSessionMark = true;
+                        this.currentSession = SessionManager.initAndGetSession();
+                    }
+                    return this.currentSession;
+                }
+            }
+        }
+        //声明此次个getSession时创建一个session
+        this.initSessionMark = true;
+        this.currentSession = SessionManager.initAndGetSession();
+        return this.currentSession;
     }
 
     /**

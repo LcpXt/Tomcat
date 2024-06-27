@@ -12,6 +12,7 @@ public class Cookie {
         this.value = value;
         this.maxAge = -1L;
         this.path = "/";
+        this.httpOnly = false;
     }
 
     private String key;

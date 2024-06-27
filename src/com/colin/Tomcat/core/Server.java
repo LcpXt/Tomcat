@@ -2,6 +2,7 @@ package com.colin.Tomcat.core;
 
 import com.colin.Tomcat.impl.TomcatHttpServletRequest;
 import com.colin.Tomcat.impl.TomcatHttpServletResponse;
+import com.colin.servlet.Cookie;
 import com.colin.servlet.HttpServlet;
 
 import java.io.*;
@@ -110,7 +111,10 @@ public class Server {
 
 
 
-//            System.out.println("已发给服务端响应");
+            if (request.initSessionMark){
+                System.err.println("此次是创建session" + request.currentSession);
+                response.addCookie(new Cookie("JSESSIONID", request.currentSession.getId() + ""));
+            }
 
             response.finishedResponse();
             outputStream.close();
