@@ -1,4 +1,4 @@
-package com.colin.servlet;
+package com.colin.servlet.servlet;
 
 import java.io.IOException;
 
@@ -13,7 +13,7 @@ public abstract class HttpServlet implements Servlet{
     }
 
     @Override
-    public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException, InstantiationException, IllegalAccessException {
 
     }
 

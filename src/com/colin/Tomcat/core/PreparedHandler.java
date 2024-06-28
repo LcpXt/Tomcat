@@ -1,5 +1,9 @@
 package com.colin.Tomcat.core;
 
+import com.colin.Tomcat.exception.NotListenerException;
+import com.colin.Tomcat.exception.NotServeletException;
+import com.colin.servlet.servlet.Servlet;
+import com.colin.servlet.annotation.WebListener;
 import com.colin.servlet.annotation.WebServlet;
 
 import java.io.File;
@@ -63,12 +67,23 @@ public class PreparedHandler {
      * @param currentProjectAllClassesName
      * @throws ClassNotFoundException
      */
-    public static Map<String, String> initURIMapping(List<String> currentProjectAllClassesName) throws ClassNotFoundException {
+    public static Map<String, String> initURIMapping(List<String> currentProjectAllClassesName) throws ClassNotFoundException, NotServeletException, NotListenerException {
         for (String className : currentProjectAllClassesName) {
             Class<?> aClass = Class.forName(className);
-            WebServlet annotation = aClass.getAnnotation(WebServlet.class);
-            if(annotation != null){
-                URIMapping.put(annotation.value(), className);
+            WebServlet webServlet = aClass.getAnnotation(WebServlet.class);
+            WebListener webListener = aClass.getAnnotation(WebListener.class);
+            if(webServlet != null){
+                //判断当前类是不是servlet的子类
+                if (Servlet.class.isAssignableFrom(aClass)){
+                    URIMapping.put(webServlet.value(), className);
+                }else {
+                    throw new NotServeletException("当前类型不是一个servlet类");
+                }
+            }
+            if (webListener != null){
+                System.out.println("===============================");
+                System.out.println(aClass.getName());
+                ListenerFactory.init(aClass);
             }
         }
 //        System.out.println(URIMapping);

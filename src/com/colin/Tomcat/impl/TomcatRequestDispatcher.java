@@ -1,10 +1,10 @@
 package com.colin.Tomcat.impl;
 
 import com.colin.Tomcat.core.Server;
-import com.colin.servlet.HttpServlet;
-import com.colin.servlet.HttpServletRequest;
-import com.colin.servlet.HttpServletResponse;
-import com.colin.servlet.RequestDispatcher;
+import com.colin.servlet.servlet.HttpServlet;
+import com.colin.servlet.servlet.HttpServletRequest;
+import com.colin.servlet.servlet.HttpServletResponse;
+import com.colin.servlet.servlet.RequestDispatcher;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -53,7 +53,7 @@ public class TomcatRequestDispatcher implements RequestDispatcher {
      * @param resp
      */
     @Override
-    public void include(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    public void include(HttpServletRequest req, HttpServletResponse resp) throws IOException, InstantiationException, IllegalAccessException {
         this.getHttpServlet(req, resp).service(req, resp);
     }
 
@@ -64,7 +64,7 @@ public class TomcatRequestDispatcher implements RequestDispatcher {
      * @param resp
      */
     @Override
-    public void forward(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    public void forward(HttpServletRequest req, HttpServletResponse resp) throws IOException, InstantiationException, IllegalAccessException {
         HttpServlet httpServlet = this.getHttpServlet(req, resp);
         //清空当前response中printWrite流中的内容
         PrintWriter writer = resp.getWriter();

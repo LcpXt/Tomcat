@@ -1,7 +1,7 @@
 package com.colin.Tomcat.impl;
 
-import com.colin.servlet.Cookie;
-import com.colin.servlet.HttpServletResponse;
+import com.colin.servlet.servlet.Cookie;
+import com.colin.servlet.servlet.HttpServletResponse;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

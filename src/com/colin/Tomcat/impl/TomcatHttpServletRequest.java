@@ -1,10 +1,12 @@
 package com.colin.Tomcat.impl;
 
+import com.colin.Tomcat.core.ListenerFactory;
 import com.colin.Tomcat.core.SessionManager;
-import com.colin.servlet.Cookie;
-import com.colin.servlet.HttpServletRequest;
-import com.colin.servlet.HttpSession;
-import com.colin.servlet.RequestDispatcher;
+import com.colin.servlet.listener.ServletRequestAttributeEvent;
+import com.colin.servlet.listener.ServletRequestAttributeListener;
+import com.colin.servlet.listener.ServletRequestEvent;
+import com.colin.servlet.listener.ServletRequestListener;
+import com.colin.servlet.servlet.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -76,7 +78,13 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
      */
     public boolean initSessionMark;
 
-    public TomcatHttpServletRequest(InputStream inputStream, String serverIp, int serverPort) throws IOException {
+    private ServletRequestListener listener;
+
+    private ServletRequestAttributeListener attributeListener;
+
+    private ServletRequestEvent servletRequestEvent;
+
+    public TomcatHttpServletRequest(InputStream inputStream, String serverIp, int serverPort) throws IOException, InstantiationException, IllegalAccessException {
         try {
             this.attributes = new HashMap<>();
             byte[] temp = new byte[8192];
@@ -104,9 +112,14 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
             String incompleteBody = requestContent.substring(requestBodyBeginIndex);
             byte[] incompleteBodyBytes = incompleteBody.getBytes(StandardCharsets.ISO_8859_1);
             //得到请求体内容一共有多少字节
-            int contentLength = getContentLength(substring);
-            System.out.println("总大小："+ contentLength);
+//            int contentLength = getContentLength(substring);
+//            System.out.println("总大小："+ contentLength);
             this.parseRequestBody(headerEndIndex, incompleteBodyBytes, inputStream);
+            //获取当前request域对象的 生命周期监听器 和 attribute监听器
+            //如果用户有对应的监听器实现，那么就会在getListener方法中反射创建对象并且赋值给当前的成员变量
+            //如果没有对应监听器的实现，就会返回一个空实现TomcatListener 为了避免空指针异常，没有任何意义。
+            this.listener = (ServletRequestListener) ListenerFactory.getListener(this);
+            this.attributeListener = (ServletRequestAttributeListener) ListenerFactory.getAttributeListener(this);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -226,6 +239,18 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
      */
     @Override
     public void setAttribute(String key, Object value) {
+        ServletRequestAttributeEvent servletRequestAttributeEvent;
+        //先看看存不存在重名key覆盖问题，有就是更新attribute，没有就是添加
+        for (String temp : attributes.keySet()) {
+            if (temp.equals(key)) {
+                servletRequestAttributeEvent = new ServletRequestAttributeEvent(this, temp, this.attributes.get(temp));
+                this.attributeListener.attributeReplaced(servletRequestAttributeEvent);
+                this.attributes.put(key, value);
+                return;
+            }
+        }
+        servletRequestAttributeEvent = new ServletRequestAttributeEvent(this, key, value);
+        this.attributeListener.attributeAdded(servletRequestAttributeEvent);
         this.attributes.put(key, value);
     }
 
@@ -238,6 +263,18 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
     @Override
     public Object getAttribute(String key) {
         return this.attributes.get(key);
+    }
+
+    /**
+     * 移除attribute
+     *
+     * @param key
+     */
+    @Override
+    public void removeAttribute(String key) {
+        ServletRequestAttributeEvent servletRequestAttributeEvent = new ServletRequestAttributeEvent(this, key, this.attributes.get(key));
+        this.attributeListener.attributeReplaced(servletRequestAttributeEvent);
+        this.attributes.remove(key);
     }
 
     /**
@@ -300,12 +337,22 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
     }
 
     /**
+     * 获取 ServletContext
+     *
+     * @return
+     */
+    @Override
+    public ServletContext getServletContext() {
+        return TomcatServletContext.getServletContext();
+    }
+
+    /**
      * 获取session
      *
      * @return
      */
     @Override
-    public HttpSession getSession() {
+    public HttpSession getSession() throws InstantiationException, IllegalAccessException {
         if (this.cookies != null){
             for (Cookie cookie : cookies) {
                 if ("JSESSIONID".equals(cookie.getKey().trim())){
@@ -409,5 +456,21 @@ public class TomcatHttpServletRequest implements HttpServletRequest {
     @Override
     public BufferedReader getReader() {
         return new BufferedReader(new StringReader(this.requestBody));
+    }
+
+    public ServletRequestListener getListener() {
+        return this.listener;
+    }
+
+    public ServletRequestAttributeListener getAttributeListener() {
+        return attributeListener;
+    }
+
+    public void setServletRequestEvent(ServletRequestEvent servletRequestEvent) {
+        this.servletRequestEvent = servletRequestEvent;
+    }
+
+    public ServletRequestEvent getServletRequestEvent() {
+        return this.servletRequestEvent;
     }
 }

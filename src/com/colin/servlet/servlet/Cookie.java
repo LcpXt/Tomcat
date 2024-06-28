@@ -1,4 +1,4 @@
-package com.colin.servlet;
+package com.colin.servlet.servlet;
 
 import java.util.Date;
 

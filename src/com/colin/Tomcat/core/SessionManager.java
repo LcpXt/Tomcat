@@ -1,13 +1,11 @@
 package com.colin.Tomcat.core;
 
 import com.colin.Tomcat.impl.TomcatHttpSession;
-import com.colin.servlet.HttpSession;
+import com.colin.servlet.servlet.HttpSession;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -62,7 +60,7 @@ public class SessionManager {
      * 初始化并返回session
      * @return
      */
-    public static HttpSession initAndGetSession() {
+    public static HttpSession initAndGetSession() throws InstantiationException, IllegalAccessException {
         TomcatHttpSession tomcatHttpSession = new TomcatHttpSession();
         sessionContainer.put(tomcatHttpSession.getId(), tomcatHttpSession);
         return tomcatHttpSession;

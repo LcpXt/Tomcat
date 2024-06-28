@@ -1,8 +1,7 @@
-package com.colin.servlet;
+package com.colin.servlet.servlet;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.Reader;
 import java.util.Map;
 
 /**
@@ -12,10 +11,16 @@ import java.util.Map;
 public interface HttpServletRequest {
 
     /**
+     * 获取 ServletContext
+     * @return
+     */
+    ServletContext getServletContext();
+
+    /**
      * 获取session
      * @return
      */
-    HttpSession getSession();
+    HttpSession getSession() throws InstantiationException, IllegalAccessException;
 
     /**
      * 根据请求头的key获取对应value
@@ -92,6 +97,12 @@ public interface HttpServletRequest {
      * @return
      */
     Object getAttribute(String key);
+
+    /**
+     * 移除attribute
+     * @param key
+     */
+    void removeAttribute(String key);
 
     /**
      * 获取请求报文中所有cookie

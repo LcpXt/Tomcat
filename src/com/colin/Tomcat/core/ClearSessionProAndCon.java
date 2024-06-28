@@ -83,6 +83,7 @@ public class ClearSessionProAndCon {
             if (currentTime - httpSession.getCreateTime() >=httpSession.getTtl() && !httpSession.getTtlMark()){
                 System.out.println(httpSession + "被标记为过期");
                 httpSession.setTtlMark(true);
+                httpSession.getSessionListener().destroyed(httpSession.getHttpSessionEvent());
             }
         }
     }

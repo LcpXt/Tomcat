@@ -1,25 +1,39 @@
 package com.colin.Tomcat.impl;
 
+import com.colin.Tomcat.core.ListenerFactory;
 import com.colin.Tomcat.core.SessionManager;
-import com.colin.servlet.HttpSession;
+import com.colin.servlet.listener.*;
+import com.colin.servlet.servlet.HttpSession;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 2024年06月27日09:22
  */
 public class TomcatHttpSession implements HttpSession {
 
+
+
     private Map<String, Object> attributes;
 
-    public TomcatHttpSession() {
+    private HttpSessionAttributeListener attributeListener;
+
+
+    public TomcatHttpSession() throws InstantiationException, IllegalAccessException {
         this.id = SessionManager.sessionIdManager.incrementAndGet();
         this.createTime = System.currentTimeMillis();
         this.ttl = DEFAULT_SESSION_TTL;
         this.ttlMark = false;
         this.attributes = new HashMap<String, Object>();
+
+        this.httpSessionEvent = new HttpSessionEvent(this);
+        this.sessionListener = (HttpSessionListener) ListenerFactory.getListener(this);
+        if (this.sessionListener != null){
+            this.sessionListener.initHttpSession(this.httpSessionEvent);
+        }
+
+        this.attributesListener = (HttpSessionAttributeListener) ListenerFactory.getAttributeListener(this);
     }
 
     /**
@@ -56,6 +70,12 @@ public class TomcatHttpSession implements HttpSession {
      */
     private Boolean ttlMark;
 
+    private HttpSessionListener sessionListener;
+
+    private final HttpSessionEvent httpSessionEvent;
+
+    private final HttpSessionAttributeListener attributesListener;
+
     /**
      * 获取session的id
      *
@@ -74,6 +94,18 @@ public class TomcatHttpSession implements HttpSession {
      */
     @Override
     public void setAttribute(String key, Object value) {
+        HttpSessionAttributeEvent httpSessionAttributeEvent;
+        //先看看存不存在重名key覆盖问题，有就是更新attribute，没有就是添加
+        for (String temp : attributes.keySet()) {
+            if (temp.equals(key)) {
+                httpSessionAttributeEvent = new HttpSessionAttributeEvent(this, temp, this.attributes.get(temp));
+                this.attributeListener.attributeReplaced(httpSessionAttributeEvent);
+                this.attributes.put(key, value);
+                return;
+            }
+        }
+        httpSessionAttributeEvent = new HttpSessionAttributeEvent(this, key, value);
+        this.attributeListener.attributeAdded(httpSessionAttributeEvent);
         this.attributes.put(key, value);
     }
 
@@ -95,6 +127,8 @@ public class TomcatHttpSession implements HttpSession {
      */
     @Override
     public void removeAttribute(String key) {
+        HttpSessionAttributeEvent httpSessionAttributeEvent = new HttpSessionAttributeEvent(this, key, this.attributes.get(key));
+        this.attributeListener.attributeRemoved(httpSessionAttributeEvent);
         this.attributes.remove(key);
     }
 
@@ -103,7 +137,8 @@ public class TomcatHttpSession implements HttpSession {
      */
     @Override
     public void invalidate() {
-
+        this.sessionListener.destroyed(this.httpSessionEvent);
+        this.setTtlMark(true);
     }
 
     public Long getCreateTime() {
@@ -140,6 +175,18 @@ public class TomcatHttpSession implements HttpSession {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public HttpSessionListener getSessionListener() {
+        return sessionListener;
+    }
+
+    public HttpSessionEvent getHttpSessionEvent() {
+        return httpSessionEvent;
+    }
+
+    public HttpSessionAttributeListener getAttributesListener() {
+        return attributesListener;
     }
 
     @Override
