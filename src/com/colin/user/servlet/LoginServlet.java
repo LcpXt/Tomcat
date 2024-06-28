@@ -1,8 +1,8 @@
 package com.colin.user.servlet;
 
-import com.colin.servlet.HttpServlet;
-import com.colin.servlet.HttpServletRequest;
-import com.colin.servlet.HttpServletResponse;
+import com.colin.servlet.servlet.HttpServlet;
+import com.colin.servlet.servlet.HttpServletRequest;
+import com.colin.servlet.servlet.HttpServletResponse;
 import com.colin.servlet.annotation.WebServlet;
 
 /**

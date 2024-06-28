@@ -1,8 +1,6 @@
 package com.colin.user.servlet;
 
-import com.colin.servlet.HttpServlet;
-import com.colin.servlet.HttpServletRequest;
-import com.colin.servlet.HttpServletResponse;
+import com.colin.servlet.servlet.*;
 import com.colin.servlet.annotation.WebServlet;
 
 import java.io.*;
@@ -20,8 +18,13 @@ public class TestServlet extends HttpServlet {
     }
 
     @Override
-    public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        req.getSession();
+    public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException, InstantiationException, IllegalAccessException {
+//        try {
+//            Thread.sleep(5000);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
+        HttpSession session = req.getSession();
     }
 
     @Override

@@ -1,14 +1,12 @@
 package com.colin.user.servlet;
 
-import com.colin.servlet.Cookie;
-import com.colin.servlet.HttpServlet;
-import com.colin.servlet.HttpServletRequest;
-import com.colin.servlet.HttpServletResponse;
+import com.colin.servlet.servlet.Cookie;
+import com.colin.servlet.servlet.HttpServlet;
+import com.colin.servlet.servlet.HttpServletRequest;
+import com.colin.servlet.servlet.HttpServletResponse;
 import com.colin.servlet.annotation.WebServlet;
-import com.colin.user.bean.User;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 
 /**
  * 2024年06月26日09:31
