@@ -2,11 +2,18 @@ package com.colin.Tomcat.core;
 
 import com.colin.Tomcat.exception.NotListenerException;
 import com.colin.Tomcat.exception.NotServeletException;
+import com.colin.Tomcat.impl.TomcatFilterChain;
+import com.colin.servlet.annotation.WebFilter;
+import com.colin.servlet.filter.Filter;
+import com.colin.servlet.filter.FilterChain;
+import com.colin.servlet.servlet.HttpServletRequest;
+import com.colin.servlet.servlet.HttpServletResponse;
 import com.colin.servlet.servlet.Servlet;
 import com.colin.servlet.annotation.WebListener;
 import com.colin.servlet.annotation.WebServlet;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +28,12 @@ public class PreparedHandler {
     private static final List<String> allClasses = new ArrayList<String>();
 
     private static final Map<String, String> URIMapping = new HashMap<String, String>();
+
+    private static final List<TomcatFilterChain> filterChainList = new ArrayList<>();
+
+    public static TomcatFilterChain firstFilterChain;
+
+    public static TomcatFilterChain lastFilterChain;
 
     /**
      * 递归地获取当前工程下所有类的全限定类名，放入一个数组集合中
@@ -67,11 +80,13 @@ public class PreparedHandler {
      * @param currentProjectAllClassesName
      * @throws ClassNotFoundException
      */
-    public static Map<String, String> initURIMapping(List<String> currentProjectAllClassesName) throws ClassNotFoundException, NotServeletException, NotListenerException {
+    public static Map<String, String> initURIMapping(List<String> currentProjectAllClassesName) throws ClassNotFoundException, NotServeletException, NotListenerException, InstantiationException, IllegalAccessException {
+        initFilterChain();
         for (String className : currentProjectAllClassesName) {
             Class<?> aClass = Class.forName(className);
             WebServlet webServlet = aClass.getAnnotation(WebServlet.class);
             WebListener webListener = aClass.getAnnotation(WebListener.class);
+            WebFilter webFilter = aClass.getAnnotation(WebFilter.class);
             if(webServlet != null){
                 //判断当前类是不是servlet的子类
                 if (Servlet.class.isAssignableFrom(aClass)){
@@ -85,8 +100,56 @@ public class PreparedHandler {
                 System.out.println(aClass.getName());
                 ListenerFactory.init(aClass);
             }
+            if (webFilter != null && Filter.class.isAssignableFrom(aClass)){
+                Filter filter = (Filter) aClass.newInstance();
+                String value = webFilter.value();
+                TomcatFilterChain tomcatFilterChain = new TomcatFilterChain();
+                tomcatFilterChain.setCurrentFilter(filter);
+                tomcatFilterChain.setUrlPattern(value);
+
+                TomcatFilterChain previousFilterChain = filterChainList.get(filterChainList.size()-1);
+                previousFilterChain.setNextFilterChain(tomcatFilterChain);
+                tomcatFilterChain.setPreviousFilterChain(previousFilterChain);
+                tomcatFilterChain.setFirstFilterChain(firstFilterChain);
+                tomcatFilterChain.setLastFilterChain(lastFilterChain);
+                filterChainList.add(tomcatFilterChain);
+            }
         }
 //        System.out.println(URIMapping);
+        filterChainList.add(lastFilterChain);
+        TomcatFilterChain tomcatFilterChain = filterChainList.get(filterChainList.size() - 2);
+        tomcatFilterChain.setNextFilterChain(lastFilterChain);
+        lastFilterChain.setPreviousFilterChain(tomcatFilterChain);
         return URIMapping;
     }
+
+    private static void initFilterChain(){
+        firstFilterChain = new TomcatFilterChain();
+        lastFilterChain = new TomcatFilterChain();
+        firstFilterChain.setFirstFilterChain(firstFilterChain);
+        firstFilterChain.setPreviousFilterChain(null);
+        firstFilterChain.setCurrentFilter(new Filter() {
+            @Override
+            public void doFilter(HttpServletRequest req, HttpServletResponse resp, FilterChain filterChain) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+                filterChain.doFilter(req, resp);
+            }
+        });
+        firstFilterChain.setLastFilterChain(lastFilterChain);
+        firstFilterChain.setNextFilterChain(lastFilterChain);
+
+        lastFilterChain.setFirstFilterChain(firstFilterChain);
+        lastFilterChain.setPreviousFilterChain(firstFilterChain);
+        lastFilterChain.setCurrentFilter(new Filter() {
+            @Override
+            public void doFilter(HttpServletRequest req, HttpServletResponse resp, FilterChain filterChain) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+                filterChain.doFilter(req, resp);
+            }
+        });
+
+        lastFilterChain.setNextFilterChain(null);
+        lastFilterChain.setLastFilterChain(lastFilterChain);
+        filterChainList.add(firstFilterChain);
+
+    }
+
 }

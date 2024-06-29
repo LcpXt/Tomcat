@@ -17,6 +17,9 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 2024年06月24日10:11
@@ -40,6 +43,15 @@ public class Server {
     public static Map<String, HttpServlet> servletMapping = new HashMap<>();
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, NotServeletException, NotListenerException {
+
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
+                200,
+                200,
+                30000,
+                TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(8196)
+        );
+
         ServerSocket serverSocket = new ServerSocket();
         serverSocket.bind(new InetSocketAddress( "localhost",8080));
         String serverIp = serverSocket.getInetAddress().getHostName();
@@ -71,91 +83,44 @@ public class Server {
         while (true) {
             Socket socket = serverSocket.accept();
 
-            InputStream inputStream = socket.getInputStream();
-            OutputStream outputStream = socket.getOutputStream();
-            //request域对象创建完成
-            TomcatHttpServletRequest request = new TomcatHttpServletRequest(inputStream, serverIp, serverPort);
-            //准备一个暴露给开发人员的时间节点 是 request的初始化节点
-            ServletRequestListener listener = request.getListener();
-            if (listener != null){
-                //为了能在监听方法中拿到当前域对象
-                ServletRequestEvent servletRequestEvent = new ServletRequestEvent(request);
-                request.setServletRequestEvent(servletRequestEvent);
-                listener.initRequest(servletRequestEvent);
-            }
-
-            TomcatHttpServletResponse response = new TomcatHttpServletResponse(outputStream);
-
-            String remoteURI = request.getRemoteURI();
-            boolean flag = true;
-            if ("/".equals(remoteURI)) {
-                response.getWriter().write("欢迎来到首页");
-            }
-            for (String uri : URIMappings.keySet()) {
-                if (uri.equals(remoteURI)) {//在映射关系中找到了此次请求URI对应的全限定类名
-                    String currentServletClassName = URIMappings.get(remoteURI);
-                    HttpServlet currentServlet = servletMapping.get(currentServletClassName);
-                    //保证只在第一次创建的时候初始化，保证单例
-                    if (currentServlet == null) {
-                        Class<?> aClass = Class.forName(currentServletClassName);
-                        currentServlet = (HttpServlet) aClass.newInstance();
-                        currentServlet.init();
-                        servletMapping.put(currentServletClassName, currentServlet);
+            threadPoolExecutor.execute(() ->{
+                try {
+                    InputStream inputStream = socket.getInputStream();
+                    OutputStream outputStream = socket.getOutputStream();
+                    //request域对象创建完成
+                    TomcatHttpServletRequest request = new TomcatHttpServletRequest(inputStream, serverIp, serverPort);
+                    //准备一个暴露给开发人员的时间节点 是 request的初始化节点
+                    ServletRequestListener listener = request.getListener();
+                    if (listener != null){
+                        //为了能在监听方法中拿到当前域对象
+                        ServletRequestEvent servletRequestEvent = new ServletRequestEvent(request);
+                        request.setServletRequestEvent(servletRequestEvent);
+                        listener.initRequest(servletRequestEvent);
                     }
-                    currentServlet.service(request, response);
-                    flag = false;
+
+                    TomcatHttpServletResponse response = new TomcatHttpServletResponse(outputStream);
+
+                    PreparedHandler.firstFilterChain.doFilter(request, response);
+
+
+                    if (request.initSessionMark){
+                        System.err.println("此次是创建session" + request.currentSession);
+                        response.addCookie(new Cookie("JSESSIONID", request.currentSession.getId() + ""));
+                    }
+                    //即将完成响应时，执行request域对象的 destroy方法
+                    //如果开发人员有自己的重写 走的是重写的逻辑
+                    //如果没有 走的是默认的空方法
+                    if (request.getListener() != null){
+                        request.getListener().destroyed(request.getServletRequestEvent());
+                    }
+                    response.finishedResponse();
+                    outputStream.close();
+                    inputStream.close();
+                    socket.close();
+                } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    throw new RuntimeException(e);
                 }
-            }
-            //没找到此次请求URI对应的全限定类名
-            if (flag){
-                response.getWriter().write("<!doctype html>\n" +
-                        "   <html lang=\"zh\">\n" +
-                        "      <head>\n" +
-                        "         <title>\n" +
-                        "            HTTP状态 404 - 未找到\n" +
-                        "         </title>\n" +
-                        "         <style type=\"text/css\">\n" +
-                        "            body {font-family:Tahoma,Arial,sans-serif;} h1, h2, h3, b {color:white;background-color:#525D76;} h1 {font-size:22px;} h2 {font-size:16px;} h3 {font-size:14px;} p {font-size:12px;} a {color:black;} .line {height:1px;background-color:#525D76;border:none;}\n" +
-                        "         </style>\n" +
-                        "</head>\n" +
-                        "      <body>\n" +
-                        "         <h1>\n" +
-                        "            HTTP状态 404 - 未找到\n" +
-                        "         </h1>\n" +
-                        "         <hr class=\"line\" />\n" +
-                        "         <p>\n" +
-                        "            <b>类型</b> 状态报告\n" +
-                        "         </p>\n" +
-                        "         <p>\n" +
-                        "            <b>消息</b> 请求的资源[" + request.getRemoteURI() + "]不可用\n" +
-                        "         </p>\n" +
-                        "         <p>\n" +
-                        "            <b>描述</b> 源服务器未能找到目标资源的表示或者是不愿公开一个已经存在的资源表示。\n" +
-                        "         </p>\n" +
-                        "         <hr class=\"line\" />\n" +
-                        "         <h3>\n" +
-                        "            MyTomcat 0.0.1\n" +
-                        "         </h3>\n" +
-                        "</body>\n" +
-                        "</html>");
-            }
-
-
-
-            if (request.initSessionMark){
-                System.err.println("此次是创建session" + request.currentSession);
-                response.addCookie(new Cookie("JSESSIONID", request.currentSession.getId() + ""));
-            }
-            //即将完成响应时，执行request域对象的 destroy方法
-            //如果开发人员有自己的重写 走的是重写的逻辑
-            //如果没有 走的是默认的空方法
-            if (request.getListener() != null){
-                request.getListener().destroyed(request.getServletRequestEvent());
-            }
-            response.finishedResponse();
-            outputStream.close();
-            inputStream.close();
-            socket.close();
+            });
         }
     }
 }
