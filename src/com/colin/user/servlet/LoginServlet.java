@@ -18,10 +18,10 @@ public class LoginServlet extends HttpServlet {
 
     @Override
     public void service(HttpServletRequest req, HttpServletResponse res) {
-        String username = req.getParameter("username");
-        String pw = req.getParameter("password");
-        System.out.println(username);
-        System.out.println(pw);
+//        String username = req.getParameter("username");
+//        String pw = req.getParameter("password");
+//        System.out.println(username);
+//        System.out.println(pw);
         System.out.println("执行LoginServlet");
     }
 
